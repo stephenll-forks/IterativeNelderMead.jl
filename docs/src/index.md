@@ -6,11 +6,7 @@ Documentation for IterativeNelderMead.jl
 Details
 -------
 
-This flavor of Nelder-Mead is based on the publicly available Matlab algorithm provided [here](https://www.mathworks.com/matlabcentral/fileexchange/102-simps) with additional tweaks. It is an excellent choice for derivative-free objectives. Parameters can be passed via usual Julia vectors or a simple Dictionary-like API. Support for parameter bounds is provided, but any constraints must be manually implemented through the objective function.
-
-Looking Forward
----------------
-The goal for IterativeNelderMead.jl is to be included in the standard SciML package 
+This flavor of Nelder-Mead is based on the publicly available Matlab algorithm provided [here](https://www.mathworks.com/matlabcentral/fileexchange/102-simps) with additional tweaks. It is an excellent choice for derivative-free objectives. Parameters can be passed via usual Julia vectors or a simple Dictionary-like API. Support for parameter bounds is provided, but any constraints must be manually implemented through the objective function. The goal for IterativeNelderMead.jl is for support through the SciML Optimization.jl interface.
 
 
 Examples
