@@ -7,6 +7,15 @@ struct IterativeNelderMeadOptimizer
     options::Dict{String, Any}
 end
 
+"""
+    IterativeNelderMeadOptimizer(;options=nothing)
+Construct an IterativeNelderMeadOptimizer optimizer. options is of type Dict{String, Any}.
+Default options are:
+- `max_fcalls = 1400 * number of varied parameters`. The number of objective calls is **not** reset after each iteration / subspace.
+- `no_improve_break = 3`. For a given parameter space, the number of times the solver needs to converge in a row to officially be considered converged. This applies to all parameter spaces / iterations.
+- `ftol_rel = 1E-6`. For a given parameter space, the relative change in the objective function to be considered converged. This applies to all parameter spaces / iterations.
+- `n_iterations = number of varied parameters`.
+"""
 function IterativeNelderMeadOptimizer(;options=nothing)
     if isnothing(options)
         options = Dict{String, Any}()
@@ -65,6 +74,15 @@ function denormalize_parameter(parn, par::Parameter)
     end
 end
 
+"""
+    optimize(obj, p0::Vector{<:Real}, optimizer::IterativeNelderMeadOptimizer, [lower_bounds, upper_bounds, vary])
+    optimize(obj, p0::Parameters, optimizer::IterativeNelderMeadOptimizer)
+Minimize the object function obj with initial parameters p0 using the IterativeNelderMeadOptimizer solver. Lower bounds can also be provided as additional vectors or using the Parameter API.
+Returns an NamedTuple with properties:
+- pbest::Parameters or Vector, the parameters corresponding to the optimized objective value fbest.
+- fbest::Float64, the optimized objective value.
+- fcalls::Int, the number of objective calls.
+"""
 function optimize(obj, p0::Vector{<:Real}, optimizer::IterativeNelderMeadOptimizer, lower_bounds=nothing, upper_bounds=nothing, vary=nothing)
     if !haskey(optimizer.options, "uses_parameters")
         optimizer.options["uses_parameters"] = false
@@ -368,6 +386,7 @@ function compute_dx_rel(simplex::AbstractMatrix{Float64})
     r = abs.(b .- a) ./ c
     return nanmaximum(r)
 end
+
 
 function compute_df_rel(a, b)
     avg = (abs(a) + abs(b)) / 2

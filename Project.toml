@@ -1,7 +1,7 @@
 name = "IterativeNelderMead"
 uuid = "c4497e51-e72c-4304-bf71-922071a3f507"
 authors = ["Bryson Cale <bryson.cale1@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"

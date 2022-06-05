@@ -17,16 +17,24 @@ struct Parameters
     dict::OrderedDict{String, Parameter}
 end
 
-"""Construct a new parameter"""
-function Parameter(;name=nothing, value::Real, lower_bound::Real=-Inf, upper_bound::Real=Inf, vary=true, latex_str=nothing)
+"""
+    Parameter(;name=nothing, value::Real, lower_bound::Real=-Inf, upper_bound::Real=Inf, vary::Bool=true, latex_str=nothing)
+Construct a new parameter. The parameter name does not have to be provided and will be automatically set if using the dictionary interface.
+"""
+function Parameter(;name=nothing, value::Real, lower_bound::Real=-Inf, upper_bound::Real=Inf, vary::Bool=true, latex_str=nothing)
     if lower_bound == upper_bound
         vary = false
     end
     return Parameter(name, value, lower_bound, upper_bound, vary, latex_str)
 end
 
-"""Construct an empty Parameters struct"""
-Parameters() = Parameters(OrderedDict{String, Parameter}())
+"""
+    Parameters()
+Construct an empty Parameters struct.
+"""
+function Parameters()
+    return Parameters(OrderedDict{String, Parameter}())
+end
 
 Base.length(pars::Parameters) = length(pars.dict)
 Base.merge!(pars::Parameters, pars2::Parameters) = merge!(pars.dict, pars2.dict)
@@ -86,6 +94,10 @@ function to_df(pars::Parameters)
     return df
 end
 
+"""
+    Parameters(x::AbstractVector{<:Real}, names::AbstractVector{<:AbstractString}, lower_bounds=nothing, upper_bounds=nothing, vary=nothing)
+Constructor from vectors.
+"""
 function Parameters(x::AbstractVector{<:Real}, names::AbstractVector{<:AbstractString}, lower_bounds=nothing, upper_bounds=nothing, vary=nothing)
     pars = Parameters()
     nx = length(x)
