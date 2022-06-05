@@ -1,9 +1,6 @@
 IterativeNelderMead.jl
 ======================
 
-[Documentation]("https://juliadocs.github.io/IterativeNelderMead.jl/")
-
-
 Documentation for IterativeNelderMead.jl
 
 Details
