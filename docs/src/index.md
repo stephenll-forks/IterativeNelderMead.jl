@@ -3,6 +3,15 @@ IterativeNelderMead.jl
 
 Documentation for IterativeNelderMead.jl
 
+Installation
+------------
+
+```julia
+using Pkg
+Pkg.add("IterativeNelderMead")
+```
+
+
 Details
 -------
 
