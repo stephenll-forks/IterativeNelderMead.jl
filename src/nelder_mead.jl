@@ -14,6 +14,7 @@ Default options are:
 - `max_fcalls = 1400 * number of varied parameters`. The number of objective calls is **not** reset after each iteration / subspace.
 - `no_improve_break = 3`. For a given parameter space, the number of times the solver needs to converge in a row to officially be considered converged. This applies to all parameter spaces / iterations.
 - `ftol_rel = 1E-6`. For a given parameter space, the relative change in the objective function to be considered converged. This applies to all parameter spaces / iterations.
+- `penalty = 10`. The penalty applied when parameters are out of bounds. The penalty is applied as `f_new = f + penalty * abs(bound - x)` in normalized parameter units if both bounds are provided (and therefore bound = 0 or 1), or the original units if only one bound is provided.
 - `n_iterations = number of varied parameters`.
 """
 function IterativeNelderMeadOptimizer(;options=nothing)
@@ -119,14 +120,15 @@ end
 
 
 """
-    optimize(obj, p0::Vector{<:Real}, optimizer::IterativeNelderMeadOptimizer, [lower_bounds, upper_bounds, vary])
+    optimize(obj, p0::Vector{Float64}, optimizer::IterativeNelderMeadOptimizer, [lower_bounds, upper_bounds, vary])
 Minimize the object function obj with initial parameters p0 using the IterativeNelderMeadOptimizer solver. Lower bounds can also be provided as additional vectors or using the Parameter API.
 Returns an NamedTuple with properties:
-- pbest::Vector, the parameters corresponding to the optimized objective value fbest.
+- pbest::Vector{Float64}, the parameters corresponding to the optimized objective value fbest.
 - fbest::Float64, the optimized objective value.
 - fcalls::Int, the number of objective calls.
+- simplex::Matrix{Float64}, the number of objective calls.
+- iteration::Int, the iteration reached, typically equal to n_iterations.
 """
-
 function optimize(obj, p0::Vector{<:Real}, optimizer::IterativeNelderMeadOptimizer; lower_bounds=nothing, upper_bounds=nothing, vary=nothing)
 
     # Resolve Options
@@ -178,12 +180,22 @@ function optimize(obj, p0::Vector{<:Real}, optimizer::IterativeNelderMeadOptimiz
 
     # Full simplex
     full_simplex = get_initial_simplex(p0n, lower_boundsn, upper_boundsn, vary)
+
+    current_iteration = 0
     
     # Loop over iterations
     for iteration=1:n_iterations
 
+        current_iteration += 1
+
         # Perform Ameoba call for all parameters
         optimize_space!(obj, full_subspace, p0, lower_bounds, upper_bounds, vary, pbest, fbest, fcalls, full_simplex, copy(full_simplex), options)
+
+        # Check x tolerance
+        #x_converged = (compute_dx_rel(full_simplex) < options["xtol_rel"]) || (compute_dx_abs(full_simplex) < options["xtol_abs"])
+        #if x_converged
+        #    break
+        #end
         
         # If there's <= 2 params, a three-simplex is the smallest simplex used and only used once.
         if nv <= 2
@@ -199,7 +211,7 @@ function optimize(obj, p0::Vector{<:Real}, optimizer::IterativeNelderMeadOptimiz
     end
     
     # Output
-    out = get_result(options, pbest, fbest, fcalls, full_simplex)
+    out = get_result(options, pbest, fbest, fcalls, full_simplex, current_iteration, lower_bounds, upper_bounds, vary)
 
     # Return
     return out
@@ -281,7 +293,7 @@ function optimize_space!(obj, subspace::Subspace, p0::Vector, lower_bounds::Vect
             break
         end
             
-        # Break if f tolerance has been met
+        # Break if f tolerance has been met no_improve_break times in a row
         if compute_df_rel(f1, fnp1) > ftol_rel
             n_converged = 0
         else
@@ -359,15 +371,15 @@ function optimize_space!(obj, subspace::Subspace, p0::Vector, lower_bounds::Vect
 
 
     # Sort
-    # inds = sortperm(fvals)
-    # fvals .= fvals[inds]
-    # simplex .= simplex[:, inds]
-    # x1 .= simplex[:, 1]
-    # xn .= simplex[:, end-1]
-    # xnp1 .= simplex[:, end]
-    # f1 = fvals[1]
-    # fn = fvals[end-1]
-    # fnp1 = fvals[end]
+    inds = sortperm(fvals)
+    fvals .= fvals[inds]
+    simplex .= simplex[:, inds]
+    x1 .= simplex[:, 1]
+    xn .= simplex[:, end-1]
+    xnp1 .= simplex[:, end]
+    f1 = fvals[1]
+    fn = fvals[end-1]
+    fnp1 = fvals[end]
     
     # Update the full simplex and best fit parameters
     pbestn, _, _ = normalize_parameters(pbest, lower_bounds, upper_bounds, vary)
@@ -379,15 +391,27 @@ function optimize_space!(obj, subspace::Subspace, p0::Vector, lower_bounds::Vect
     end
 
     # Denormalize and store
-    _pbest = denormalize_parameters(pbestn, lower_bounds, upper_bounds, vary)
-    pbest .= _pbest
+    pbest .= denormalize_parameters(pbestn, lower_bounds, upper_bounds, vary)
     fbest[] = f1
-    #@infiltrate
     nothing
 end
 
-function get_result(options::Dict{String, Any}, pbest::Vector, fbest::Ref{Float64}, fcalls::Ref{Int}, simplex::Matrix)
-    return (;pbest=pbest, fbest=fbest[], fcalls=fcalls[], simplex=simplex)
+function get_result(options::Dict{String, Any}, pbest::Vector, fbest::Ref{Float64}, fcalls::Ref{Int}, simplex::Matrix, iteration::Int, lower_bounds, upper_bounds, vary)
+    simplex_out = denormalize_simplex(simplex, pbest, lower_bounds, upper_bounds, vary)
+    return (;pbest=pbest, fbest=fbest[], fcalls=fcalls[], simplex=simplex_out, iteration=iteration)
+end
+
+function denormalize_simplex(simplex::AbstractMatrix, pars, lower_bounds, upper_bounds, vary)
+    vi = findall(vary)
+    ptempn = copy(pars)
+    ptemp = copy(pars)
+    simplex_out = zeros(size(simplex))
+    for i=1:length(vi)+1
+        ptempn[vi] .= simplex[:, i]
+        ptemp = denormalize_parameters(ptempn, lower_bounds, upper_bounds, vary)
+        simplex_out[:, i] .= ptemp[vi]
+    end
+    return simplex_out
 end
 
 
