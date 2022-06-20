@@ -1,5 +1,4 @@
 using Statistics, LinearAlgebra
-using Infiltrator
 
 export IterativeNelderMeadOptimizer, optimize
 
