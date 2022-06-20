@@ -1,5 +1,5 @@
 using Statistics, LinearAlgebra
-using IterativeNelderMead
+using Infiltrator
 
 export IterativeNelderMeadOptimizer, optimize
 
@@ -384,8 +384,9 @@ function optimize_space!(obj, subspace::Subspace, p0::Vector, lower_bounds::Vect
     # Update the full simplex and best fit parameters
     pbestn, _, _ = normalize_parameters(pbest, lower_bounds, upper_bounds, vary)
     pbestn[subspace.indices] .= x1
+    vi = findall(vary)
     if !isnothing(subspace.index)
-        current_full_simplex[:, subspace.index] .= pbestn
+        current_full_simplex[:, subspace.index] .= pbestn[vi]
     else
         current_full_simplex .= copy(simplex)
     end
@@ -470,7 +471,7 @@ function compute_obj(obj, x::AbstractVector{Float64}, subspace::Subspace, ptestn
     ptestn[subspace.indices] .= x
     ptest = denormalize_parameters(ptestn, lower_bounds, upper_bounds, vary)
     f = obj(ptest)
-    f = penalize(f, ptest, subspace.indices, lower_boundsn, upper_boundsn, penalty)
+    f = penalize(f, ptestn, subspace.indices, lower_boundsn, upper_boundsn, penalty)
     if !isfinite(f)
         f = 1E6
     end
